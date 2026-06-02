@@ -17,4 +17,3 @@ pub enum FerricError {
     #[error("serialization error: {0}")]
     Serialization(#[from] bincode::Error),
 }
-pub type Result<T> = std::result::Result<T, FerricError>;
