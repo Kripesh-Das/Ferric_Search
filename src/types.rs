@@ -1,3 +1,6 @@
+use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
+
 pub enum Metric {
     Cosine,
     L2,
@@ -92,7 +95,19 @@ impl IndexSpec {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct Hit {
     pub id: i64,
     pub score: f32,
+}
+impl Eq for Hit {}
+
+impl Ord for Hit {
+    fn cmp(&self, other: &Self) -> Ordering {
+        other
+            .score
+            .partial_cmp(&self.score)
+            .unwrap_or(Ordering::Equal)
+            .then_with(|| self.id.cmp(&other.id))
+    }
 }
