@@ -83,20 +83,28 @@ impl KMeans {
     }
 
     pub fn fit(&self, vectors: &[f32]) -> Vec<f32> {
+        // 1. Calculate total number of data points
         let n = vectors.len() / self.dim;
+
         assert!(n >= self.k, "not enough vectors for k-means");
 
+        // 2. SMART INITIALIZATION: Pick starting centroids spread far apart
         let mut centroids = self.kmeans_init(vectors, n);
 
+        // 3. MAIN LOOP: Repeat the "Assign and Update" dance
         for _ in 0..self.max_iters {
+            // STEP A: Assign every point to its closest current centroid
             let assignments = self.predict(vectors, &centroids);
 
+            // Prepare fresh arrays to calculate the new centroid positions
             let mut new_centroids = vec![0.0f32; self.k * self.dim];
             let mut counts = vec![0usize; self.k];
 
+            // STEP B: Sum up the coordinates of all points assigned to each cluster
             for (i, &cluster) in assignments.iter().enumerate() {
-                counts[cluster] += 1;
+                counts[cluster] += 1; // Increment the point count for this cluster
 
+                // Get a view of the current data point
                 let vec = &vectors[i * self.dim..(i + 1) * self.dim];
 
                 // Get a mutable view of this cluster's spot in the new_centroids array
@@ -108,7 +116,7 @@ impl KMeans {
                 }
             }
 
-            // Average the sums to find the new mathematical center (mean)
+            // STEP C: Average the sums to find the new mathematical center (mean)
             for c in 0..self.k {
                 if counts[c] > 0 {
                     let centroid = &mut new_centroids[c * self.dim..(c + 1) * self.dim];
@@ -117,14 +125,18 @@ impl KMeans {
                         centroid[d] /= counts[c] as f32;
                     }
                 } else {
-                    // If a cluster is empty, resurrect it with a random data point
+                    // EDGE CASE: If a cluster is empty, resurrect it with a random data point
                     let idx = fastrand::usize(..n);
                     new_centroids[c * self.dim..(c + 1) * self.dim]
                         .copy_from_slice(&vectors[idx * self.dim..(idx + 1) * self.dim]);
                 }
             }
+
+            // STEP D: Replace old centroids with the newly calculated ones for the next loop
             centroids = new_centroids;
         }
+
+        // 4. Return the final, optimized centroids
         centroids
     }
 }
