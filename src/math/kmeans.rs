@@ -1,5 +1,5 @@
 use super::kernels;
-use rayon::prelude::*;
+use rayon::prelude::*; // Parallel Processing
 use std::{f32, vec};
 
 pub struct KMeans {
@@ -10,12 +10,14 @@ pub struct KMeans {
 
 impl KMeans {
     pub fn new(k: usize, dim: usize, max_iters: usize) -> Self {
-        Self { k, dim, max_iters }
+        Self { k, dim, max_iters } // Constructor
     }
 
     pub fn kmeans_init(&self, vectors: &[f32], n: usize) -> Vec<f32> {
-        // creation of centroids
-        // n --> no of vectors , vectors --> datapoints in 1D
+        // Creation of Initial Centroids
+        // n --> no of vectors/data points
+        // vectors --> all datapoints in 1D
+
         let mut rng = fastrand::Rng::new();
         let mut centroids = vec![0.0f32; self.k * self.dim]; // centroid points on 1D
 
@@ -23,12 +25,15 @@ impl KMeans {
         centroids[..self.dim].copy_from_slice(&vectors[first * self.dim..(first + 1) * self.dim]);
 
         for c in 1..self.k {
+            // for each centroid
             let mut min_dists = vec![f32::MAX; n];
 
             for i in 0..n {
+                // check the distance of all datapoints for that centroid
                 let vec = &vectors[i * self.dim..(i + 1) * self.dim];
 
                 for j in 0..c {
+                    // check the min distance of a data point wrt all the centroids have been till now selected
                     let centroid = &centroids[j * self.dim..(j + 1) * self.dim];
                     let d = kernels::l2_squared(vec, centroid);
                     if d < min_dists[i] {
@@ -37,6 +42,7 @@ impl KMeans {
                 }
             }
 
+            // Weighted Random Selection : Points farther from existing centroids have higher probability of being chosen, better spreads.
             let threshold = rng.f32();
             let mut cum_sum = 0.0f32;
             let mut pick = 0;
@@ -56,7 +62,8 @@ impl KMeans {
     }
 
     pub fn predict(&self, vectors: &[f32], centroids: &[f32]) -> Vec<usize> {
-        // each datapoint assigned a centroid
+        // Each datapoint assigned a centroid.
+
         let n = vectors.len() / self.dim;
         let mut assignments = vec![0usize; n];
 
@@ -81,8 +88,9 @@ impl KMeans {
             });
         return assignments;
     }
-
+    //
     pub fn fit(&self, vectors: &[f32]) -> Vec<f32> {
+        // Training: Updation of centroids after assignment of datapoints
         // 1. Calculate total number of data points
         let n = vectors.len() / self.dim;
 
@@ -91,7 +99,7 @@ impl KMeans {
         // 2. SMART INITIALIZATION: Pick starting centroids spread far apart
         let mut centroids = self.kmeans_init(vectors, n);
 
-        // 3. MAIN LOOP: Repeat the "Assign and Update" dance
+        // 3. MAIN LOOP: Repeat the "Assign and Update"
         for _ in 0..self.max_iters {
             // STEP A: Assign every point to its closest current centroid
             let assignments = self.predict(vectors, &centroids);
@@ -136,7 +144,6 @@ impl KMeans {
             centroids = new_centroids;
         }
 
-        // 4. Return the final, optimized centroids
         centroids
     }
 }
